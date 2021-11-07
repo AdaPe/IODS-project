@@ -1,13 +1,33 @@
+---
+output:
+  word_document: default
+  pdf_document: default
+  html_document: default
+---
 
 # About the project
+*kissa*
+__iso__
 
-*Write a short description about the course and add a link to your GitHub repository here. This is an R Markdown (.Rmd) file so you should use R Markdown syntax.*
+
 
 ```{r}
 # This is a so-called "R chunk" where you can write R code.
 
 date()
 
+
+
+
 ```
-The text continues here.
+Well, I have no clue what I think about this course. I have had a great trouble with sisu, and therefore I was suprised that my signup was accepted. However, lets see how this goes. 
+[linkkiIODS](https://github.com/AdaPe/IODS-project.git)
+Tein hyperlinkin perille koska testi. Tässä peruslinkki
+https://github.com/AdaPe/IODS-project.git
+*kissa*
+
+
+
+
+
 
