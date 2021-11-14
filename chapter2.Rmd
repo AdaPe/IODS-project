@@ -2,7 +2,7 @@
 
 setwd("~/IODS-project")
 
-I have done some linear models. I also lost my github button, but luckily I got it back! And obviously this likes to happen on times such as sunday night! 
+I have done some linear models. I also lost my github button, but luckily I got it back! And obviously this likes to happen on times such as sunday night!Hmm, lets see what happens, now the github diary does not work..
 
 ```{r}
 date()
