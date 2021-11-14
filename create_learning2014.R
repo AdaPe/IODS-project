@@ -1,2 +1,4 @@
 #Aino Peura 14.11.2021. 
-#This file contains my week two excercises.
+#This file contains my week two excercises
+
+#is this going to git?
