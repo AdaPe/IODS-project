@@ -1,13 +1,135 @@
-# Insert chapter 2 title here
+#Excercises for week 2
 
-*Describe the work you have done this week and summarize your learning.*
+setwd("~/IODS-project")
 
-- Describe your work and results clearly. 
-- Assume the reader has an introductory course level understanding of writing and reading R code as well as statistical methods.
-- Assume the reader has no previous knowledge of your data or the more advanced methods you are using.
+I have done some linear models. I also lost my github button, but luckily I got it back! And obviously this likes to happen on times such as sunday night! 
 
 ```{r}
 date()
+
 ```
 
-Here we go again...
+Here we go again. This next session lists all the libraries needed for completing this excercise: 
+```{r}
+library("ggplot2")
+library("GGally")
+```
+
+
+
+Lets start with reading the dataframe from the provided link. We shall also look at the data more closely by using the summary function. I am not printing here the structure of our data, because from the environment page it can be seen. 
+
+
+```{r}
+data<- read.table(url("http://s3.amazonaws.com/assets.datacamp.com/production/course_2218/datasets/learning2014.txt"), 
+                  sep = ",", header = T)
+
+summary(data)
+```
+This is a classic dataframe with 166 rows and 7 columns: gender, age, attitude, deep, stra, surf and points. It seems that this dataframe is the same we created with data wrangling excercise. However, I think each row is an individual and columns are results from that individual.
+
+There are 110 females and 56 males in the data. Mean age is 25.51 years. 
+Variables attitude means global attitude towards statistics, points are derived from the exam and variables deep, stra, and surf were constructed from subquestions as in previous excercise. 
+
+From now on, abbreviations will be used, but different variables mean these things: 
+
+stra = Strategic approach
+deep = deep approach
+surf = surface approach
+
+
+
+```{r}
+ggpairs(data, mapping = aes(alpha = 0.3, col =gender))
+
+summary(data)
+```
+From the graphical oveview of the data, we can see that we have more women than menas a test subjects. The average age of women is smaller than men.  
+
+Men have generally a bit better attitude towards statistics, however, it is not stated as statistically significant. I don't see other  differences between gender and individual variables (boxplots are quite overlapping). 
+
+It seems that the age is not normally distributed variable, the peak is in on the right side of the graph. Thus, people included into this study seem to be generally young rather than old. 
+
+When it comes to attitude, it seems that attitudes of women is almost normally distributed while men have a bit left tilted graph. (still, this might be okay to say its normally distributed). 
+
+Deep seems to also be a bit leaning to left as a graph, it would be good to chech the distribution with some calculation method rather than looking the graphs. 
+
+Stra and surf learnings seems to be normally distributed variables, while the points is not (it has this odd tail on the right side). 
+
+It seems that there is startistically significant correlation between the attitude towards statistics and points obtained from the exam. This is true for both genders. 
+
+Also surface and deep learning seem to be strongly negatively correlated in the population including both genders and among men. 
+
+Attitude and surface learning also seem to be negatively correlated, in the whole population and among men. 
+
+Surface and strategic learning seem to be correlated in whole population, but such correlation is not seen in one-gender-only populations. 
+
+
+3. 
+
+For our regression model we ought to choose (from the graphical output, three variables that have the best correlation with points).
+
+Three having the greatest correlation values with points according to our graphical interpretation seem to be attitude (0.437, positively correlated and statistically significant), stra (0.146, not statistically significant), and surf (-0.144, so negatively correlated, not statistically significant).
+
+
+
+```{r}
+  linearmode<- lm(points ~ attitude + stra + surf, data = data)
+summary(linearmode)
+```
+
+ From the summary of linear model we can observe following: There is a significant correlation between attitude and points. Also, the crossing of the axis is not 0, which is also a significant observation. Other variables in this model are not significantand thus they are left out from the model. 
+ 
+ Lets make new model with attitude, gender and deep. 
+```{r}
+linearmode<- lm(points ~ attitude + gender + deep, data = data)
+summary(linearmode)
+```
+
+
+Again, the only statsistically significant correlation is between attitude and points. For us students this is a happy finding, a  better attitude we have, better results we will have:)
+
+So my final linear model is following: 
+```{r}
+linearmode<- lm(points ~ attitude, data = data)
+summary(linearmode)
+```
+
+4. 
+
+The residuals in my model are reflecting how well my model predicted the actual value of y. Thus, these are the difference between actual points value and calculated points value. If residuals are symmetrically divided to either side of my plot, the value is 0. Because the median is over 0, there are more samples above the model thatn under the model. However, there are samples that my model predicts too high values especially in the lower scale (residual minimal is -16).
+
+Coefficients have the estimated value, std error from the residuals, t-value (estimate divided by standard error) and Pr(>|t|) which is the lookup of the t-value in t-distribution table with given degrees of freedom.
+
+In the bottom of the summary output we have the residual standard error, which is very similar for standard deviation. Thus, reflecting how much there is varition in errors. 
+
+Multiple R-squared represents how well my model is reflecting my data. It is calculated by counting the explained variation of the model by the total variation of the model. If my model predicts things well, we have R-squared close to 1, while poorly performing model might even have negative values My model predicts now 19.06 percent of the whole variation. According to the datacamp, R-squared over 0.5 is good, so the model is not very accurate. 
+
+
+If we raise it to the second power, we will really see how well my model is reflecting my data. 3.632836 % can be seen to be caused by attitude variable.
+
+Adjusted R-squared is multiple r-squared adjusted for the multiple hypothesis testing (if we would have several variables). Because the R-value tends to get bigger even though there would be unsignificant variables. 
+
+F-statistic: This parameter is quite like a t-test for the whole model, it gives me a p-value about how likely my model is to be just randomly fitting my data like this. 
+
+
+
+```{r}
+
+par(mfrow = c(2,2))
+plot(linearmode)
+```
+
+Here we are able to see, that our data contains some outliers (the residuals vs fitted-line is not straight and the outliers are indicated in the plot).
+
+Homoscedasticity means that one variable has approximately similar variability in all values of other variable. We can see from Q_Q plot that  our model does not differ significantly from the predicted residuals presented in optimal theorethical model. I think these observations are almost perfectly in line with theorethically predicted residuals.
+
+Heteroskedasticity means that the variability of dependent variable is altering significantly if the value of explaining variable is altered. 
+
+For observunf thse, we can look at the scale location plot where we want to really see two things: 
+1. line is horisontal
+2. The value spread around red lines is not variating as much as fitted values (seems ok!). 
+
+And the last graph, residuals vs leverage is describing how close or far the points are from each other. We have some points with a bit higher leverage, but none of the is outside from Cook's distance and thus deleting them might not have significant influence on our model. 
+
+
