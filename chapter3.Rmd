@@ -130,7 +130,7 @@ nrow(missclass)/nrow(joinedS)
 
 ```
 
-Well, approximately 1/3 of the values was misquessed -> This is better than simple quessing, because if we have to quess 370 times and only 104 times uncorrect, it is very unlikely that we obtain this good values. 
+Well, approximately 1/3 of the values were missquessed -> This is better than simple quessing, because if we have to quess 370 times and only 104 times uncorrect, it is very unlikely that we obtain this good values. 
 
 
 
