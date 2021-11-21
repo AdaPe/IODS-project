@@ -1,0 +1,138 @@
+---
+title: "Week three excercises"
+output: html_document
+---
+Libraries used for this code
+```{r }
+library(readr)
+library(ggplot2)
+library(GGally)
+library(dplyr)
+```
+
+So, lets begin the week 3 excercises. In this excercise we will be using data from "Paulo Cortez, University of Minho, GuimarÃ£es, Portugal, http://www3.dsi.uminho.pt/pcortez". It describes achievements and sosioeconomial variables of portuguese students. The data was collected with reports and questionnaires. 
+
+In the joined data, m means math and p means portuguese. The list of variables and explanations are following. For some reason, in our joined data some m and p variables from data combination were left in our data. 
+
+This list is copied from the website: https://archive.ics.uci.edu/ml/datasets/Student+Performance, and it lacks folloring attributes: alc_use (combination of week and weekend alcohol use), high_use = if alcohol use is >2.
+
+1 school - student's school (binary: 'GP' - Gabriel Pereira or 'MS' - Mousinho da Silveira)
+2 sex - student's sex (binary: 'F' - female or 'M' - male)
+3 age - student's age (numeric: from 15 to 22)
+4 address - student's home address type (binary: 'U' - urban or 'R' - rural)
+5 famsize - family size (binary: 'LE3' - less or equal to 3 or 'GT3' - greater than 3)
+6 Pstatus - parent's cohabitation status (binary: 'T' - living together or 'A' - apart)
+7 Medu - mother's education (numeric: 0 - none, 1 - primary education (4th grade), 2 5th to 9th grade, 3  secondary education or 4 higher education)
+8 Fedu - father's education (numeric: 0 - none, 1 - primary education (4th grade), 2 5th to 9th grade, 3  secondary education or 4  higher education)
+9 Mjob - mother's job (nominal: 'teacher', 'health' care related, civil 'services' (e.g. administrative or police), 'at_home' or 'other')
+10 Fjob - father's job (nominal: 'teacher', 'health' care related, civil 'services' (e.g. administrative or police), 'at_home' or 'other')
+11 reason - reason to choose this school (nominal: close to 'home', school 'reputation', 'course' preference or 'other')
+12 guardian - student's guardian (nominal: 'mother', 'father' or 'other')
+13 traveltime - home to school travel time (numeric: 1 - <15 min., 2 - 15 to 30 min., 3 - 30 min. to 1 hour, or 4 - >1 hour)
+14 studytime - weekly study time (numeric: 1 - <2 hours, 2 - 2 to 5 hours, 3 - 5 to 10 hours, or 4 - >10 hours)
+15 failures - number of past class failures (numeric: n if 1<=n<3, else 4)
+16 schoolsup - extra educational support (binary: yes or no)
+17 famsup - family educational support (binary: yes or no)
+18 paid - extra paid classes within the course subject (Math or Portuguese) (binary: yes or no)
+19 activities - extra-curricular activities (binary: yes or no)
+20 nursery - attended nursery school (binary: yes or no)
+21 higher - wants to take higher education (binary: yes or no)
+22 internet - Internet access at home (binary: yes or no)
+23 romantic - with a romantic relationship (binary: yes or no)
+24 famrel - quality of family relationships (numeric: from 1 - very bad to 5 - excellent)
+25 freetime - free time after school (numeric: from 1 - very low to 5 - very high)
+26 goout - going out with friends (numeric: from 1 - very low to 5 - very high)
+27 Dalc - workday alcohol consumption (numeric: from 1 - very low to 5 - very high)
+28 Walc - weekend alcohol consumption (numeric: from 1 - very low to 5 - very high)
+29 health - current health status (numeric: from 1 - very bad to 5 - very good)
+30 absences - number of school absences (numeric: from 0 to 93)
+
+# these grades are related with the course subject, Math or Portuguese:
+31 G1 - first period grade (numeric: from 0 to 20)
+31 G2 - second period grade (numeric: from 0 to 20)
+32 G3 - final grade (numeric: from 0 to 20, output target)
+
+```{r}
+joined<- read.csv(url("https://github.com/rsund/IODS-project/raw/master/data/alc.csv"))
+colnames(joined)
+```
+
+I think I will choose following variables: 
+famrel = quality of family relationships -> Because I think bad relationships lead to alcohol consumption
+health = I don't think which way this will be?
+activities = if you have ec-activities, you have no time to drink
+absences = I have no clue why you have left this as absences p and m, because they are identical, what is the point?. However, I will think if you have hangover, you don't attend school-> thus more absences. 
+
+```{r}
+identical(joined$absences.m, joined$absences.m)
+
+
+```
+
+Lets explore our chosen variables and lets make a subtable of those: 
+```{r}
+joinedS<- joined[,c("high_use", "alc_use", "famrel", "health", "activities", "absences")]
+
+ggpairs(joinedS, aes(col=high_use))
+```
+Allright, lets look at the variables more closely:
+out of 370 students, a bit over 200 are low users and almost 100 are high users. 
+The variable alcohol use seems to be normally distributed in high users group, in low users not.
+Variable family relationships seems to correlate weakly and significantly to alcohol use. 
+Health seems not to correlate alcohol use and is not normally distributed (which is natural because most of use are really healthy). Activities don't have the correlation either for the alcohol use. Hoever, absences seem to correlate stongly to alcohol usage. 
+
+Thus, my hypothesis was correct only with absences column and with family relationships . 
+
+Lets then create glm by using glm function: 
+```{r}
+model<- glm(high_use ~famrel+health+activities+absences, data=joinedS, family = "binomial")
+summary(model)
+```
+
+From the summary of our model, we can see that (as previously stated), the only significantly correlating variables are famrel and absences. 
+
+From the summary we can also obtain some values that tell us how well our model is working. However, our deviance is quite high, so we have a very poor model. 
+
+We can zoom into individual values in our model, but more reasonable is to look the quality of our predictions. 
+Lets define coefficients and their confidence intervals:
+
+```{r}
+OR<- coef(model)%>% exp
+CI<- exp(confint(model))
+cbind(OR, CI)
+
+```
+
+Lets then create model only with family relationships and absences, because they were only significant ones:
+Lets create also probabilities and prediction variables that will show us how good our model is: 
+And lets do some cross-tabulation: 
+
+```{r}
+model2<- glm(high_use ~famrel+absences, data=joinedS, family = "binomial")
+joinedS$probabilities<- predict(model2, type = "response")
+joinedS$Prediction<- ifelse(joinedS$probabilities>0.5, "High", "low")
+table(joinedS$high_use, joinedS$Prediction)
+table(joinedS$famrel, joinedS$Prediction)
+
+```
+
+Okay, then we will plot the values: 
+```{r}
+ggplot(joinedS, aes(high_use, probabilities, col=Prediction ))+
+  geom_point()
+```
+And now, I did not check how this was done in datacamp, but lets count how many points were missclassified (the training error): 
+```{r}
+Falsepos<- subset(joinedS, high_use == F & Prediction=="High")
+Falseneg<- subset(joinedS, high_use == T & Prediction!="High")
+missclass<- rbind.data.frame(Falseneg, Falsepos)
+nrow(missclass)/nrow(joinedS)
+
+```
+
+Well, approximately 1/3 of the values was misquessed -> This is better than simple quessing, because if we have to quess 370 times and only 104 times uncorrect, it is very unlikely that we obtain this good values. 
+
+
+
+
+
