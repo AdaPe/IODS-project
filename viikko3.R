@@ -5,9 +5,6 @@
 #"This data approach student achievement in secondary education of two Portuquese schools."
 #Aino Peura
 
-#Dear peer-reviewer, I have a long history with R and I tend to do things a 
-#bit differentely than datacamp, hope this does not create extra work for you!
-
 #libraries
 library(readr)
 library(tidyverse)
