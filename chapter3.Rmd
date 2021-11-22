@@ -2,6 +2,9 @@
 title: "Week three excercises"
 output: html_document
 ---
+
+#Week 3 excercises
+#Aino Peura
 Libraries used for this R-markdown file
 ```{r }
 library(readr)

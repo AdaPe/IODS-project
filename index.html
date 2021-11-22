@@ -448,14 +448,14 @@ summary {
 <pre class="r"><code># This is a so-called &quot;R chunk&quot; where you can write R code.
 
 date()</code></pre>
-<pre><code>## [1] &quot;Mon Nov 22 08:33:47 2021&quot;</code></pre>
+<pre><code>## [1] &quot;Mon Nov 22 08:36:16 2021&quot;</code></pre>
 <p>Well, I have no clue what I think about this course. I have had a great trouble with sisu, and therefore I was suprised that my signup was accepted. However, lets see how this goes. <a href="https://github.com/AdaPe/IODS-project.git">linkkiIODS</a> Tein hyperlinkin perille koska testi. Tässä peruslinkki <a href="https://github.com/AdaPe/IODS-project.git" class="uri">https://github.com/AdaPe/IODS-project.git</a> <em>kissa</em></p>
 <hr />
 <p>#Excercises for week 2</p>
 <p>setwd(“~/IODS-project”)</p>
 <p>I have done some linear models. I also lost my github button, but luckily I got it back! And obviously this likes to happen on times such as sunday night!Hmm, lets see what happens, now the github diary does not work</p>
 <pre class="r"><code>date()</code></pre>
-<pre><code>## [1] &quot;Mon Nov 22 08:33:47 2021&quot;</code></pre>
+<pre><code>## [1] &quot;Mon Nov 22 08:36:16 2021&quot;</code></pre>
 <p>Here we go again. This next session lists all the libraries needed for completing this excercise:</p>
 <pre class="r"><code>library(&quot;ggplot2&quot;)
 library(&quot;GGally&quot;)</code></pre>
@@ -611,7 +611,7 @@ plot(linearmode)</code></pre>
 <p>For observunf thse, we can look at the scale location plot where we want to really see two things: 1. line is horisontal 2. The value spread around red lines is not variating as much as fitted values (seems ok!).</p>
 <p>And the last graph, residuals vs leverage is describing how close or far the points are from each other. We have some points with a bit higher leverage, but none of the is outside from Cook’s distance and thus deleting them might not have significant influence on our model.</p>
 <hr />
-<p>Libraries used for this R-markdown file</p>
+<p>#Week 3 excercises #Aino Peura Libraries used for this R-markdown file</p>
 <pre class="r"><code>library(readr)</code></pre>
 <pre><code>## Warning: package &#39;readr&#39; was built under R version 3.6.3</code></pre>
 <pre class="r"><code>library(ggplot2)
@@ -784,7 +784,7 @@ nrow(missclass)/nrow(joinedS)</code></pre>
 <p>So my own method of counting falseful values was as correct as the method from data-camp (we obtained the same results.) Then, lets do the cross-validation step:</p>
 <pre class="r"><code>crossV&lt;- cv.glm(data=joinedS, cost = losses, glmfit = model2, K =10)
 crossV$delta</code></pre>
-<pre><code>## [1] 0.2864865 0.2862162</code></pre>
+<pre><code>## [1] 0.2810811 0.2800000</code></pre>
 <p>Well, my model definitely has some higher error 0.29&gt;0.26, in both, training and testing data. The right number is adjusted and thus slightly better. This difference between me and the data-camp is because we have different set of variables. In the datacamp model m, they use failures + absences + sex as variables. I use only absences and family relationship quality. This is why my model looks different. So yes, I can find such a model.</p>
 <hr />
 </div>

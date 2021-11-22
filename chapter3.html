@@ -591,7 +591,7 @@ nrow(missclass)/nrow(joinedS)</code></pre>
 <p>So my own method of counting falseful values was as correct as the method from data-camp (we obtained the same results.) Then, lets do the cross-validation step:</p>
 <pre class="r"><code>crossV&lt;- cv.glm(data=joinedS, cost = losses, glmfit = model2, K =10)
 crossV$delta</code></pre>
-<pre><code>## [1] 0.2972973 0.2937838</code></pre>
+<pre><code>## [1] 0.2837838 0.2832432</code></pre>
 <p>Well, my model definitely has some higher error 0.29&gt;0.26, in both, training and testing data. The right number is adjusted and thus slightly better. This difference between me and the data-camp is because we have different set of variables. In the datacamp model m, they use failures + absences + sex as variables. I use only absences and family relationship quality. This is why my model looks different. So yes, I can find such a model.</p>
 
 
