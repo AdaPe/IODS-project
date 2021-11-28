@@ -1,0 +1,319 @@
+---
+title: "Week 4 excercises"
+output:
+  html_document:
+    df_print: paged
+    fig_width: 10
+    fig_height: 10
+---
+
+Aino Peura 28.11.2021
+These are week 4 excercises. 
+
+#### Libraries used: 
+```{r}
+#install.packages("MASS")
+#install.packages("corrplot")
+#install.packages("Hmisc")
+#install.packages("GGally")
+library(MASS)
+library(corrplot)
+library(gridExtra)
+library(dplyr)
+library(Hmisc)
+library(GGally)
+library(plotly)
+
+
+```
+
+### Lets load and explore the boston-dataset: 
+
+```{r}
+Boston
+str(Boston)
+```
+Boston-dataframe describes housing values in suburbs of Boston. It has 506 samples and 14 variables. Following info is from the RDocumentation of the MASS-package:   
+- crim: per capita crime rate by town.  
+- zn: proportion of residential land zoned for lots over 25,000 sq.ft.  
+- indus: proportion of non-retail business acres per town.  
+- chas: Charles River dummy variable (= 1 if tract bounds river; 0 otherwise).  
+- nox: nitrogen oxides concentration (parts per 10 million).  
+- rm: average number of rooms per dwelling.  
+- age: proportion of owner-occupied units built prior to 1940.  
+- dis: weighted mean of distances to five Boston employment centres.  
+- rad: index of accessibility to radial highways.  
+- tax: full-value property-tax rate per \$10,000.  
+- ptratio: pupil-teacher ratio by town.  
+- black: \(1000(Bk - 0.63)^2\) where \(Bk\) is the proportion of blacks by town.  
+- lstat: lower status of the population (percent).  
+- medv: median value of owner-occupied homes in \$1000s.  
+
+The first task is to show graphical overview of the data, summaries of the variables and relationships between variables in the data. This will be done with 3 parts: 
+- Graphical overwies of the variables are shown with following: 
+```{r}
+#With following code, density graphs are counted (density ()) and plotted to show the distribution of variables
+par(mfrow=c(2,4))
+for(i in 1:14){
+  nimi<- colnames(Boston)[i]
+  data<- density(Boston[,i])
+  plot(data, main = nimi)
+}
+
+
+
+```
+
+
+    
+From quick observation, we can see that by very inaccurate visual interpretation:  
+- variables that have peak on the small values:   
+  - crim: per capita crime rate by town.  
+  - zn: proportion of residential land zoned for lots over 25,000 sq.ft.      
+  - chas: Charles River dummy variable (= 1 if tract bounds river; 0 otherwise).    
+  - dis: weighted mean of distances to five Boston employment centres.    
+- variables that have peak on high values:     
+  - age: proportion of owner-occupied units built prior to 1940.    
+  - ptratio: pupil-teacher ratio by town.     
+  - black: \(1000(Bk - 0.63)^2\) where \(Bk\) is the proportion of blacks by town.     
+- variables that are normally distributed:   
+  - lstat: lower status of the population (percent).    
+  - medv: median value of owner-occupied homes in \$1000s.  
+  - nox: nitrogen oxides concentration (parts per 10 million).  
+  - rm: average number of rooms per dwelling.  
+-variables that have two peaks:   
+  - indus: proportion of non-retail business acres per town.  
+  - rad: index of accessibility to radial highways.  
+  - tax: full-value property-tax rate per \$10,000.    
+  
+  
+  
+Then, lets see the summaries of our data: 
+```{r}
+for(i in 1:14){
+  nimi<- colnames(Boston)[i]
+  data<- summary(Boston[,i])
+  print(nimi)
+  print(data)
+}
+
+
+
+```
+And finally, correlation plot: The hierarchail clustering is used for ordering variables by using "order = "hclust""
+```{r}
+
+par(mfrow=c(1,2))
+#Lets count correlation matrix
+correlations<-cor(Boston)
+#Lets count significances: 
+testRes<- cor.mtest(Boston)
+#Lets plot it, variables that are blank are unsignificant
+corrplot(correlations, p.mat =testRes$p, insig = "blank",method = "number", order = "hclust", addrect = 2, number.cex = 0.75)
+```
+From the correlation plot, we can see that (these include only significant correlation values:
+ - variables ptratio, lstat, age, indus, nox, crim, rad and tax seem to correlate positively
+ -variables dis, medv and rm seem to correlate positively with chas, black, and zn and obviously with themselves
+ -chas only correlates positively with rm, medv and dis and negatively with ptratio
+ -The strognest positive correlation is between rad and tax
+ 
+### Dataset scaling
+
+ So, the next task is to scale Boston-dataset.
+ 
+```{r}
+BostonScaled<- as.data.frame(scale(Boston))
+
+#Lets plot summaries of scaled boston dataset and under each column also the uncsaled data so we can see what changed: 
+for(i in 1:14){
+  nimi<- colnames(BostonScaled)[i]
+  data1<- summary(BostonScaled[,i])
+  data2<-summary(Boston[,i])
+  print(nimi)
+  print(data1)
+  print(data2)
+}
+
+
+```
+Okay, from values above, we can see that scale-function scaled everything to have mean as 0 and also every value now represents how many standard devitions it is from the mean. These scaled values are actually called as **z-score**.
+
+Then, the next task is to divide variable crime-rate into quantiles and create a categorical variable called crime: 
+```{r}
+#Lets count quantiles
+bins<- quantile(BostonScaled$crim)
+
+#Lets set neq variable with this ifelse-script. 
+#We start with smallest and in no-option we include the test to categorize it for further
+BostonScaled$crime<- ifelse(BostonScaled$crim<bins[2], paste("[", round(bins[1], digits = 3), ",", round(bins[2], digits = 3), "]", sep = ""), 
+                            ifelse(BostonScaled$crim<bins[3], paste("(", round(bins[2], digits = 3), ",", round(bins[3], digits = 3), "]", sep = ""),
+                                   ifelse(BostonScaled$crim<bins[4], paste("(", round(bins[3], digits = 3), ",", round(bins[4], digits = 3), "]", sep = ""),                                               paste("(",round(bins[4], digits = 3), ",", round(bins[5], digits = 3), "]", sep = "") )))
+
+table(BostonScaled$crime)
+BostonScaled<- BostonScaled[,2:15]
+
+#In datacamp these were changed into following classes: low, med_low, med_high, high, so, just for clarification, we shall do the same
+
+unique(BostonScaled$crime)
+BostonScaled$crime<- ifelse(BostonScaled$crime=="[-0.419,-0.411]", "low", BostonScaled$crime)
+BostonScaled$crime<- ifelse(BostonScaled$crime=="(-0.411,-0.39]", "low_med", BostonScaled$crime)
+BostonScaled$crime<- ifelse(BostonScaled$crime=="(-0.39,0.007]", "high_med", BostonScaled$crime)
+BostonScaled$crime<- ifelse(BostonScaled$crime=="(0.007,9.924]", "high", BostonScaled$crime)
+table(BostonScaled$crime)
+```
+
+All good! Okay, now we have created the variable crime, Then, lets divide the data into train and test sets (80% into train, 20% into test: 
+
+```{r}
+#Lets create our tran-data subset
+trainData<- BostonScaled[(sample(nrow(BostonScaled), size= 0.8*nrow(BostonScaled))),]
+#And the leftovers are testdata
+testData<- subset(BostonScaled, is.element(rownames(BostonScaled), rownames(trainData))==F)
+```
+
+
+### Lets fit linear discriminant analysis on the train set
+
+So, the next task to do is to fit linear discriminant analysis into he train dataset. 
+
+```{r}
+#LDA_analysis
+ldadata<- lda(crime ~ ., data = trainData)
+
+#Lets create numeric crime vector maintaining the original arrangement of values
+trainData$crime<- ifelse(trainData$crime=="low", 1, ifelse(trainData$crime=="low_med", 2, ifelse(trainData$crime=="high_med", 3, 4)))
+
+#Then the arrows-function from datacamp
+lda.arrows <- function(x, myscale = 1, arrow_heads = 0.1, color = "red", tex = 0.75, choices = c(1,2)){
+  heads <- coef(x)
+  arrows(x0 = 0, y0 = 0, 
+         x1 = myscale * heads[,choices[1]], 
+         y1 = myscale * heads[,choices[2]], col=color, length = arrow_heads)
+  text(myscale * heads[,choices], labels = row.names(heads), 
+       cex = tex, col=color, pos=3)
+}
+
+#Lets define classes-variable
+classes <- as.numeric(trainData$crime)
+
+#lets create biplot and also the arrows, classes defines colors and also symbols for variables
+plot(ldadata, dimen = 2, col = classes, pch = classes)
+lda.arrows(ldadata, myscale = 1)
+
+
+```
+
+### Prediction
+
+First, lets save correct classes of crime-variable in test set: 
+
+```{r}
+correct <- testData$crime
+
+testData<- select(testData, -crime)
+
+```
+
+Then, lets do prediction of correct classes in the test data:
+
+```{r}
+ldaprediction<- predict(ldadata, newdata = testData)
+table(correct= correct, predicted = ldaprediction$class)
+```
+So, for some reason, my predictive function does not predict correctly classes low_med and low, some low values are predicted to be low_med. However, with every other type of variable, predicions are quite accurate:   
+- 100% high values are predicted correctly  
+- 64% of high_med values are in correct category  
+- 57% of low_med values are in correct gategory
+- BUT only 29% of low values are in low category
+
+### Distances
+
+So, lets do bostonScaled2, that is the original Boston dataset scaled
+
+```{r}
+BostonScaled2<-scale(Boston) 
+```
+
+Then, lets count euclidean and manhattan distances of the dataset:
+```{r}
+eu<- dist(BostonScaled2, method = "euclidean")#This is the hypothenuse distance, so absolutely the shortest distance
+man<- dist(BostonScaled2, method = "manhattan")#This is the sum of individual distances between variables (like in manhattan when you have to navigate between square-shaped houses)
+```
+
+Now, lets do k-means clustering: 
+```{r}
+#first, lets set seed 
+set.seed(56)
+
+#Then, lets count the WCSS (within cluster sum of squares) and define the optimal number of clusters (when this drops drastically)
+#We set the maximal number of clusters to be 10, just for the sake of time and computer 
+#we do kmeans from k==1 to k ==10, and we have tot.whitinss as a outcome variable that is saved into WCSS
+WCSS<- sapply(1:10, function(k){kmeans(BostonScaled2, k)$tot.withinss})
+
+qplot(x=1:10, y=WCSS, geom="line")
+#From here we can see that the greatest drop (so biggest variation is somewhere around 2, so optimal number of clusters is 2)
+
+BostonScaled2<- as.data.frame(BostonScaled2)
+km<-kmeans(BostonScaled2, centers = 2)
+BostonScaled2$cluster<- km$cluster
+BostonScaled2$cluster<- as.factor(BostonScaled2$cluster)
+
+
+ggpairs(BostonScaled2, upper = "blank", diag = "blank", mapping=ggplot2::aes(colour = cluster))
+
+```
+Interpretation of the data: Even though our data is in very tiny images, we can see the distribution of colors: Two clusters separate the variable crim beautifully. Also zn is beautifully divided. Same is true for indus, dis and nox variables. However, I don't think other variables are separating by these two clusters. 
+
+### Bonus 1
+- Lets scale the Boston-dataset to BostonScaled3. Firstly, Lets select k as 5 and perform k-means clustering, 
+```{r}
+BostonScaled3<- scale(Boston)
+km<-kmeans(BostonScaled2, centers = 5)
+BostonScaled3<- as.data.frame(BostonScaled3)
+BostonScaled3$cluster<- km$cluster
+
+#then, lets perform LDA wth clusters as target classes
+LDA<- ldadata<- lda(cluster ~ ., data = BostonScaled3)
+
+#Lets define the function Lda-arrows again. 
+lda.arrows <- function(x, myscale = 1, arrow_heads = 0.1, color = "red", tex = 0.75, choices = c(1,2)){
+  heads <- coef(x)
+  arrows(x0 = 0, y0 = 0, 
+         x1 = myscale * heads[,choices[1]], 
+         y1 = myscale * heads[,choices[2]], col=color, length = arrow_heads)
+  text(myscale * heads[,choices], labels = row.names(heads), 
+       cex = tex, col=color, pos=3)
+}
+
+#Lets define classes-variable
+classes <- as.numeric(BostonScaled3$cluster)
+
+#lets create biplot and also the arrows, classes defines colors and also symbols for variables
+plot(LDA, dimen = 2, col = classes, pch = classes)
+lda.arrows(LDA, myscale = 3)
+
+```
+So, lets interprate results. nec, induce. rad are great separators of clusters. Age and crim, also zn are separating clusters 1 and 2 from 4,3 and 5. I would say that age is the strongest linear separator, because it has longest vector. 
+
+### Super-Bonus
+First, lets run the code: 
+```{r}
+model_predictors <- select(trainData, -crime)
+# check the dimensions
+dim(model_predictors)
+#For some reasons the crime was till included, while it was not in trainData, so we skip the row 1
+ldadata$scaling<- ldadata$scaling[2:14,]
+dim(ldadata$scaling)
+# matrix multiplication
+matrix_product <- as.matrix(model_predictors) %*% ldadata$scaling
+matrix_product <- as.data.frame(matrix_product)
+#Lets adjust the color
+par(mfrow= c(2,2))
+plot_ly(x = matrix_product$LD1, y = matrix_product$LD2, z = matrix_product$LD3, type= 'scatter3d', mode='markers', color = trainData$crime)
+km<- kmeans(trainData, centers = 5)
+#Then, lets define the color by cluster
+trainData$clusters<- km$cluster
+plot_ly(x = matrix_product$LD1, y = matrix_product$LD2, z = matrix_product$LD3, type= 'scatter3d', mode='markers', color = trainData$clusters)
+
+```
+Allright, lets do some visual interpretation. Low crime is cluster 1 and high crime is cluster 4. Otherwise, points have different clusters than crime rates. 
