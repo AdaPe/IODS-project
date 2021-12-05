@@ -1,6 +1,6 @@
 ---
 title: "IODS course project"
-Author: Aino Peura
+Author: Aino
 output:
   html_document:
     theme: cosmo
@@ -40,4 +40,7 @@ output:
 ```
 
 ***
+```{r child = "chapter5.Rmd"}
+# This will include Chapter 5 (that is updated in its own file) in the document.
+```
 

@@ -1,0 +1,164 @@
+---
+title: "chapter5"
+output: html_document
+author: "Aino Peura"
+fig_width: 15
+fig_height: 15
+---
+These are week 4 excercises. 
+
+```{r}
+#Libraries used for this code
+library(GGally)
+library("factoextra")
+library(readr)
+library("FactoMineR")
+library("tidyverse")
+human4 <- read_csv("human.csv")
+human4<- as.data.frame(human4)
+colnames(human4)[1]<- "Country"
+```
+
+In these excercises we will be using the human-data that is from UN website. Our data has 8 columns and 155 countries as rows. Variables as columns are following:   
+  
+-"Edu2.FM"  = population qith at least some secondary education.   
+-"Labo.FM" = labor force participation rate (15years and older).  
+-"Edu.Exp"  = expected education  
+-"Life.Exp" = Life expectancy  
+-"GNI" = Gender inequality index        
+-"Mat.Mor" = maternal mortality ratio    
+-"Ado.Birth" =Adolescent birt rate  
+-"Parli.F" =Share of sheats in parlament held by woman.   
+
+## Lets explore the distributions and relationships of the variables
+```{r}
+#First, lets plot the graphical overview. 
+par(mfrow=c(2,4))
+for(i in 2:8){
+  human4[,i]<- as.numeric(as.character(human4[,i]))
+  nimi<- colnames(human4)[i]
+  data<- density(human4[,i])
+  plot(data, main = nimi)
+}
+```
+Fom the general density maps of our variables, we can see that: 
+- Labo.FM, Edu.exp, Life.exp,and Parli.F are normally distributed. 
+- GNI, mat.mor and Ado.birth are having more values on the left, so smaller values. 
+- Edu2.FM has two peaks. 
+
+Then, lets see the summaries: 
+```{r}
+summary(human4)
+```
+
+Then, lets look at the relationships between variables: 
+```{r}
+human5<- human4[,2:9]
+ggpairs(human5, lower = "blank")+
+  theme(strip.text.y = element_text(size=6))
+```
+
+Here we can see, that:   
+- Female secondary education correlates with education expected, life expectancy, - GNI, - maternal mortality and - adolescent birt rate. (- means negatively)  
+- Females in labor force correlates strongly with: Female share of parlament places and maternal mortality.  
+- Expected education correlates strongly with: Female share of parlament places, -adolescent birt rate, -maternal mortality, -GNI and life expectancy.  
+- Life expectancy correlates with Female share of parlament places,-adolescent birt rate, -maternal mortality and -GNI.   
+- GNI correlates with adolescent birt rate and maternal mortality.  
+
+## Excercise 2, the PCA
+
+```{r}
+pca<- prcomp(human5)
+par(mfrow = c(1, 2))
+fviz_pca_ind(pca, geom= c("point", "text"), repel = T, addEllipses = F)
+fviz_pca_var(pca)
+
+
+```
+
+I did not do a biplot, because with 155 observations it just looks like a mess. However, here we can see. that PCA1 represents 76.9% of the variation, while our dimension 2 has 21.8% of the variation. The greatest sources of variatiob are maternal mortality and GNi, also adolescent birth rate is creating some variation. 
+
+
+## Lets do the same for scaled variables
+
+```{r}
+human6<- scale(human5)
+
+pca<- prcomp(human6)
+par(mfrow = c(1, 2))
+fviz_pca_ind(pca, geom= c("point", "text"), repel = T, addEllipses = F, col.ind = "cos2", gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"))+ 
+  ggtitle("scaled pca-plot diverging countries by variables behind the GNI-value")
+fviz_pca_var(pca)+ 
+  ggtitle("scaled pca-plot spesifying variables behind the GNI-value")
+fviz_pca_biplot(pca)
+```
+Well, now the results differ quite a lot. Here we can see, that in pca1: expected education, amount of women with secondary education, life expectancy and on the other side GNI, maternal mortality and adolescent birt rate are making the differnece, In the second principal component, amount of women in parlament and amount of women in labor force are crating the greatest difference. These results differ more (there are more variables making a significant difference, because variation of the variables is scaled and thus more equal). The range of the values in human 4 (unscaled data frame) is greatest with maternal mortaluty, gni and adolescent birt rate. By the way, the colors represent how well each point is separated (more red, further)
+```{r}
+summary(human5)
+summary(human6)
+```
+
+## Give your personal interpretations of the first two principal component dimensions based on the biplot drawn after PCA on the standardized human data. (0-2 points)
+
+Lets observe the variations inside each principal component. First, lets see how pca's are divided. 
+```{r}
+fviz_eig(pca)
+```
+From the graph above, we can observe that 49.8% of the variation is explained with PCa1, and 16.4% with pca2. 
+```{r}
+res.var <- get_pca_var(pca)
+heatmap(res.var$contrib )
+```
+From the heatmap below, we can see that for the pca1, variables maternal mortality, life expectancy, education expectancy and adolescent birth are contributing quite much for the total variabce. For the second principal component, we can see that labor.FM and parli.F are contributing quite much, while the rest of the variables are contributing less, This heatmap also gives us some interesting thoughts, because we can see that after certain point, our pca-components start to be very similar to each other, or just separation based on one variable. 
+
+## Load the tea dataset from the package Factominer. Explore the data briefly: look at the structure and the dimensions of the data and visualize it. Then do Multiple Correspondence Analysis on the tea data (or to a certain columns of the data, it’s up to you). Interpret the results of the MCA and draw at least the variable biplot of the analysis. You can also explore other plotting options for MCA. Comment on the output of the plots
+
+Lets load the dataset and observe the dimensions, structures etc. 
+
+```{r}
+data(tea)
+str(tea)
+#The data has 300 obs. of  36 variables. 
+
+par(mfrow=c(6,6))
+for(i in 1:36){
+  nimi<- colnames(tea)[i]
+  data<- as.data.frame(tea[,i])
+  colnames(data)<- "column"
+  data$nimi<-nimi
+  if(i==1){
+    data2<-data
+  }else{
+    data2<- rbind.data.frame(data2, data)
+  }
+}
+
+
+ ggplot(data2, aes(column, fill=column))+
+    geom_bar()+
+    theme_light()+
+   facet_wrap(vars(nimi),  scales= "free", shrink = T)+
+   theme(legend.position = "none", axis.text.x = element_text(size=5),
+         axis.text.y = element_text(size=5))
+ 
+
+```
+So, our data has 36 variables, 35 of them are categorical while age is numeric. SPC and age-Q have most variables, but other classes have only two. 
+
+Then, lets look structure and dimensions of the data: 
+```{r}
+str(tea)
+dim(tea)
+```
+
+
+Then, lets do Multiple Correspondence Analysis for all of our variables.
+```{r}
+#Lets first transform all variables to factors, without this we will only have some errors
+tea2 <- tea %>% mutate_all(as.factor)
+#Then, lets do MCA
+Multi<- MCA(tea2, graph = T)
+```
+From the MCA-plot, we can conclude following: Age, age-q (catecorigal age) and SPC are the variables that are responsible for the most of the variation along x-axis. They were also the variables with most categories, I wonder if this is because of that. 
+
+Sex, friends, where, tea and pub are, also in addition to the variables already mentioned leading to that point. 
