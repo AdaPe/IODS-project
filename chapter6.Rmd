@@ -1,0 +1,313 @@
+---
+title: "Chapter6"
+output: html_document
+author: AP
+---
+
+First, following libraries were used: 
+```{r}
+#Libraries used in this analysis: 
+library("tidyverse")
+library("ggplot2")
+library("lme4")
+```
+
+## First glance at the data: 
+```{r}
+R<-read.csv("RATSL.csv")
+#We have one extra column from rownames
+R<- R[,2:5]
+summary(R)
+B<-read.csv("BPRSL.csv")
+#We have one extra column from rownames
+B<- B[,2:5]
+summary(B)
+```
+So, we have now two dataframes, one describing rats, one men. 
+
+The **BPRS-data** *(shortened B-data)* here describes BPRS-scores between two groups of male) Davis (2002). 
+BPRS is a brief psychiatric rating describing the presence of psychiatric symptoms. Each man has been tracked for 8 weeks time, so we have 40 males, 20 treated with treatment 1 and 20 with treatment 2, 
+
+The **rats-data** *(shortened R-data)* is from (Crowder and Hand, 1990) and describes a nutrition study conducted on three groups of rats, 
+
+"The three groups were put on different diets, and each animal’s body weight (grams) was recorded repeatedly (approximately weekly, except in week seven when two recordings were taken) over a 9-week period. The question of most interest is whether the growth profiles of the three groups differ." *from Kimmo's textbook*
+
+### Lets implement Chapter 8 into RATS-data:
+
+First, lets observe how rats are behaving in each treatment group and the general outline of the data:
+```{r}
+
+#Because all the correct variables are not yet factors
+R$ID<- as.factor(R$ID)
+
+#Plot
+ggplot(R, aes(x = Time, y = RATS, linetype = ID)) +
+  geom_line() +
+  scale_linetype_manual(values = rep(1:10, times=4)) +
+  facet_grid(. ~ Group, labeller = label_both)+
+  ggtitle("Rats raw values")
+
+```
+       
+**Results** *From the R-data, we can see that group 1 is in different range than goups 2 and 3. Group 2 also has probably one outlier, that has exceptionally high values. Also tracking is apparent here, individuals with higher values have higher values also in the end, The variance seems to be a bit higher in groups 2 and 3, while values tend to remain same in group 1.* 
+      
+## Standardisation
+     
+Lets now standardize the data and plot it again. So we will create Z-values by following code: 
+```{r}
+
+#Here we count the z-value by each timepoint
+R <- R %>%
+  group_by(Time) %>%
+  mutate(stR = (RATS-mean(RATS))/sd(RATS)) %>%
+  ungroup()
+
+ggplot(R, aes(x = Time, y = stR, linetype = ID)) +
+  geom_line() +
+  scale_linetype_manual(values = rep(1:10, times=4)) +
+  facet_grid(. ~ Group, labeller = label_both) +
+  scale_y_continuous(name = "standardized rats")+
+  ggtitle("Rats standardised values")
+```
+     
+**Results** *Standardization lowers the slope for each group and highlights some new individuals that might be outliers also in groups 1 and 3,*
+
+### Summary measure analysis
+
+Lets next observe the data plotted with 2 different types of summary graphs, linegraph and boxplot
+
+```{r}
+#Lets count the number of the weeks
+n <- R$Time%>% unique() %>% length()
+
+#Lets then count the mean and standard error (standard devision /square root of the number of observations).
+#RS is now summary of R
+
+RS <- R %>%
+  group_by(Group, Time) %>%
+  summarise( mean = mean(RATS), se = sd(RATS)/sqrt(n) ) %>%
+  ungroup()
+
+# Glimpse the data
+glimpse(RS)
+#Looks good
+
+
+# Plot the mean profiles
+RS$Group<- as.factor(RS$Group)
+
+ggplot(RS, aes(x = Time, y = mean, linetype = Group, shape = Group)) +
+  geom_line() +
+  scale_linetype_manual(values = c(1,2,3)) +
+  geom_point(size=3) +
+  scale_shape_manual(values = c(1,2,3)) +
+  geom_errorbar(aes(ymin = mean - se, ymax = mean + se, linetype="1"), width=0.3) +
+  theme(legend.position = c(0.8,0.8)) +
+  scale_y_continuous(name = "mean(Rats) +/- se(Rats)")+
+  ggtitle("Rats uncsaled data summarised")
+
+RS$Time<- as.factor(RS$Time)
+
+#Lets merge RS values to R
+R<- merge(RS, R, by = c("Time", "Group"))
+
+ggplot(R, aes(x = Time, y = RATS, fill=Group)) +
+  geom_errorbar(aes(ymin = mean - se, ymax = mean + se), width=0.3) +
+  geom_boxplot() +
+  scale_y_continuous(name = "mean(Rats) +/- se(Rats)")+
+  facet_grid(cols=vars(Group))+
+  ggtitle("Rats uncsaled data summarised")
+
+```
+      
+**Results:** *Here we can see, that boxplots seems to work a bit better for the rats-data. I think there are 2 outliers in rats data, in group 1 and in group 3. The groups are the facets and both graphs further highlight the very different values in each group*
+Lets exclude them from our analysis, because they might create problems further on. Lets thus first define the outliers, exclude them from the data and blot the boxplot-summary graph again. 
+
+```{r}
+Exclude<- subset(R, Group==2 & RATS > 520)
+Exclude$ID
+#The group2 outlier is ID ==12
+
+#Then the group1 outlier
+Exclude2<- subset(R, Group==1 & RATS <250)
+#This is number 2
+
+R<- subset(R, ID != 2 & ID != 12)
+unique(R$ID)
+
+#Lets count the means again: 
+#Lets count the number of the weeks
+n <- R$Time%>% unique() %>% length()
+
+#Lets then count the mean and standard error (standard devision /square root of the number of observations).
+#RS is now summary of R
+
+RS <- R %>%
+  group_by(Group, Time) %>%
+  summarise( mean = mean(RATS), se = sd(RATS)/sqrt(n) ) %>%
+  ungroup()
+
+
+
+# Plot the mean profiles
+RS$Group<- as.factor(RS$Group)
+
+RS$Time<- as.factor(RS$Time)
+
+#Lets remove old means:
+R$se<- NULL
+R$mean<- NULL
+
+#Lets merge RS values to R
+R<- merge(RS, R, by = c("Time", "Group"))
+
+ggplot(R, aes(x = Time, y = RATS, fill=Group)) +
+  geom_errorbar(aes(ymin = mean - se, ymax = mean + se), width=0.3) +
+  geom_boxplot() +
+  scale_y_continuous(name = "mean(Rats) +/- se(Rats)")+
+  facet_grid(cols=vars(Group))+
+  ggtitle("Rats-data summary graph with errors removed")
+```
+    
+**Results:** *In comparison with the previous figure we can see that erris are much smaller and there are only few outliers left in groups 1 and 3. The deviation especially for group 2 got a lot smaller. *
+
+
+
+## BPRS and chapter 9
+
+Lets first filter the data for outliers and lets see some trends as we did for the rats-data in chapter 8. 
+```{r}
+#Lets change variable type
+B$subject<- as.factor(B$subject)
+
+#Linegraphs
+ggplot(B, aes(x = week, y = bprs, linetype = subject)) +
+  geom_line() +
+  scale_linetype_manual(values = rep(1:10, times=4)) +
+  facet_grid(. ~ treatment, labeller = label_both) +
+  scale_y_continuous(limits = c(min(B$bprs), max(B$bprs)))
+
+#Calculating the mean
+BS <- B %>%
+  filter(week > 0) %>%
+  group_by(treatment, subject) %>%
+  summarise( mean=mean(bprs) ) %>%
+  ungroup()
+
+#Glimpse of our data
+glimpse(BS)
+#All good
+#Lets change variable type
+BS$treatment<-as.factor(BS$treatment)
+#Boxplot for defining the variables.
+ggplot(BS, aes(x = treatment, y = mean)) +
+  geom_point()+
+  geom_boxplot() +
+  stat_summary(fun.y = "mean", geom = "point", shape=23, size=4, fill = "white") +
+  scale_y_continuous(name = "mean(bprs), weeks 1-8")
+
+```
+
+   
+**Results from linegraphs:** *From our data we are able to see, that there is some tracking happening, thus individuals with high values tend to have higher values also in the end. The second interesting thing is that tall the values seems to get smaller in time, but most of the patients especially in group 1 have a higher values in the beginnning. This might be due to the effect of drugs, usually in the beginning things get worse before they can get better,*
+
+**Results from boxplots:** *From the Boxplot we can see, that there is a one outlier, where mean is over 70. Also we can see, that the values are quite overlapping, however in general a bit lower in group 2.*
+Lets filter the outlier out.
+```{r}
+#Identify the outlier
+Exclude<- subset(BS, mean>70)
+#This is the subject 11
+B<- subset(B, subject!=11)
+
+#New means
+BS <- B %>%
+  filter(week > 0) %>%
+  group_by(treatment, subject) %>%
+  summarise( mean=mean(bprs) ) %>%
+  ungroup()
+
+#Glimpse if everything went well
+glimpse(BS)
+
+#Change the type of the variable
+BS$treatment<-as.factor(BS$treatment)
+
+#Plot
+ggplot(BS, aes(x = treatment, y = mean)) +
+  geom_point()+
+  geom_boxplot() +
+  stat_summary(fun.y = "mean", geom = "point", shape=23, size=4, fill = "white") +
+  scale_y_continuous(name = "mean(bprs), weeks 1-8")
+
+```
+**Results:** *Looks much better, no outliers anymore*
+Lets then fit the linear model. 
+
+```{r}
+#Lets first include the means and sd's to the B-data
+unique(B$week)
+Week0<- subset(B, week ==0)
+BS<- BS %>% 
+  mutate(baseline = Week0$bprs)
+
+#Lets fit the most basic linear model using a mean BPRS as target variable and baseline + treatment as explanatory variables
+#This does  not take into account the linearity of the data, we are just predicting the mean values by using the linear model.
+fit<- lm(mean ~baseline + treatment, data = BS)
+#Lets then compute the analysis of the variance
+anova(fit)
+
+#Lets then create a baseline variable to our data so that we will be able to use it as a term in our analysis
+
+#Lets remove week 0 from the B-dataframe
+B<- subset(B, week !=0)
+#Lets include the results and also the baseline values from BS-dataframe
+B<-merge(B, BS, by = c("treatment", "subject"))
+
+```
+
+**Results:** *Here we can see, that the baseline value has a high significance as predictor, while treatment group has not. This is not suprise, because from out linegraphs we were able to see that there was some tracking happening-> individuals had a much greater variabtion between each other than between the beginning and the end of each treatment.*
+Next, the random intercept model, so a model that allows intercepts vary. In our case, this means that in our BPRS-data, subjects will be set as the intercept-variable (thus random factor) and BPRS-score is a target variable while explaining variables are week, treatment and baseline 
+```{r}
+ref<- lmer(bprs~week+treatment+baseline+ (1|subject), data = B, REML = F)
+
+summary(ref)
+```
+**Results:** *From here we can see, that the subject-intecept has a quite high standard error, thus individual factors affect a lot to the baseline value. BIC-value that robustly tells us how well our analysis is fitting is very high. from individual predictions we can see, that week and treatment seem to negatively correlate with BPRS-score while baseline is correlating slightly positively.*
+Lets then do the random intecept and slopes model with random factors subject and baseline: 
+```{r}
+
+ref2<- lmer(bprs~ week+ treatment+ (baseline|subject), data = B, REML = F)
+summary(ref2)
+```
+**Results:** *Well, the BIC-value did not get much smaller. Thus, our model is still an ill-fitting the data. Subjects indvidual tendencies to respond the treatment seem to have a higher effect on our data than our treatment (variabce of the intecept is 475 thus very high).*
+
+Lets perform anova for our two models so we can better compare them: 
+```{r}
+anova(ref, ref2)
+```
+**Results:** *It seems that ref2 is significant while ref is not, so taking into account the subject as well as the baseline value really makes the difference, even though it has only a slight effect on BIC-value.*
+
+Then, lets add the interaction of week and treatment to our model: 
+```{r}
+ref2<- lmer(bprs~ week*treatment+ (baseline|subject), data = B, REML = F)
+summary(ref2)
+anova(ref, ref2)
+B$fitted<- fitted(ref2)
+
+B$week<- as.factor(B$week)
+
+class(B$fitted)
+
+
+ggplot(B, aes(x = week, y = fitted, group = subject)) +
+  geom_point(aes(color=subject))+
+  geom_line(aes(color=subject))+
+  facet_grid(cols = vars(treatment))
+
+
+
+```
+
+**Results from summary and anova:** *from here we can see, that adding the dependency to our model futher make it a better predictor -> BIC-value get a bit smaller. Week and treatment seem to correlate strongly inversily to our bprs-score, and slighly to each other.* 
+
+**Resuls from the graphs:** *So, from the graphs we are able to see that our model somehow predicts the bprs to be linear value(as it should be), and this probably explains why it is a poor precitor of individual values. However, treatment in group 1 seems to have a better outcome than in group 2. All individuals seem to benefit from the treatment 1. *
